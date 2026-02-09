@@ -1,6 +1,6 @@
 
 const SUPABASE_URL = 'https://czdialdmmsfiguuxmojr.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3dnVkbmF1ZXVwd2JoZnBybXlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1ODMyNTMsImV4cCI6MjA4NjE1OTI1M30.KcER7BEPPoClh5LKpNxO6axrtAoXNDnERJOZy1jpsjE';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGlhbGRtbXNmaWd1dXhtb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1OTA0MzcsImV4cCI6MjA4NjE2NjQzN30.-_pYzLDDG5ZdLOoJ-MgfgR0hOC_McYDNUGVvy7nAI_E';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
