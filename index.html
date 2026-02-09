@@ -404,46 +404,6 @@
     </div>
 
     <script src="script.js"></script>
-</body> 
-    <script type="module">
-  // 1. Conectamos con tu base de datos de Supabase
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-  const supabaseUrl = 'https://czdialdmmsfiguuxmojr.supabase.co'
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGlhbGRtbXNmaWd1dXhtb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1OTA0MzcsImV4cCI6MjA4NjE2NjQzN30.-_pYzLDDG5ZdLOoJ-MgfgR0hOC_McYDNUGVvy7nAI_E'
-  const supabase = createClient(supabaseUrl, supabaseKey)
-
-  // 2. Esta función agarra lo que escribes y lo manda a la tabla
-  async function guardarEnSupabase(event) {
-    event.preventDefault(); // Esto evita que la página se reinicie sola
-
-    // Sacamos la información de los cuadritos de tu ficha técnica
-    const nombre = document.getElementById('Nombre del P')?.value || 'Sin nombre';
-    const cliente = document.getElementById('Cliente')?.value || 'Sin cliente';
-    const presupuesto = document.getElementById('Presupuesto')?.value || 0;
-
-    // Lo mandamos a la tabla "proyectos" que creamos
-    const { data, error } = await supabase
-      .from('proyectos')
-      .insert([
-        { 
-          nombre: nombre, 
-          cliente: cliente, 
-          costo: parseFloat(presupuesto),
-          estado: 'En preparación' 
-        }
-      ]);
-
-    if (error) {
-      alert('Error al guardar: ' + error.message);
-    } else {
-      alert('¡Listo Dhash! Tu proyecto ya está en la base de datos.');
-    }
-  }
-
-  // 3. Le decimos al botón "Finalizar Proyecto" que use esta función
-  document.querySelector('form').addEventListener('submit', guardarEnSupabase);
-</script>
-
+</body>
 
 </html>
