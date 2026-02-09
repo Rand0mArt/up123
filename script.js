@@ -19,7 +19,20 @@ const historyView = document.getElementById('history-view');
 const calendarView = document.getElementById('calendar-view');
 
 // ===== Initialize =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load projects from database
+    if (typeof DB !== 'undefined') {
+        try {
+            projects = await DB.fetchProjects();
+            console.log('Loaded', projects.length, 'projects from database');
+        } catch (e) {
+            console.error('Failed to load projects:', e);
+            alert('Error cargando proyectos: ' + e.message);
+        }
+    } else {
+        console.error('DB object not defined! Check db.js loading.');
+        alert('Error: No se pudo conectar a la base de datos. Recarga la página.');
+    }
     renderKanban();
     updateCounts();
     initDragAndDrop();
