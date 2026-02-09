@@ -1,8 +1,19 @@
+// Check Supabase CDN loaded
+if (typeof window.supabase === 'undefined') {
+    console.error('Supabase CDN no cargado! Verifica conexión a internet.');
+    alert('Error: No se pudo cargar Supabase. Verifica tu conexión e intenta de nuevo.');
+}
 
 const SUPABASE_URL = 'https://czdialdmmsfiguuxmojr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGlhbGRtbXNmaWd1dXhtb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1OTA0MzcsImV4cCI6MjA4NjE2NjQzN30.-_pYzLDDG5ZdLOoJ-MgfgR0hOC_McYDNUGVvy7nAI_E';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase;
+try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase conectado correctamente');
+} catch (e) {
+    console.error('Error creando cliente Supabase:', e);
+}
 
 const DB = {
     // Convert local project format to DB format
