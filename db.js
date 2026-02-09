@@ -51,7 +51,7 @@ const DB = {
 
     async fetchProjects() {
         const { data, error } = await supabase
-            .from('projects')
+            .from('projectos')
             .select('*')
             .order('order', { ascending: true });
 
@@ -65,7 +65,7 @@ const DB = {
 
     async createProject(project) {
         const { error } = await supabase
-            .from('projects')
+            .from('projectos')
             .insert(this.toDbFormat(project));
 
         if (error) {
@@ -77,7 +77,7 @@ const DB = {
 
     async updateProject(project) {
         const { error } = await supabase
-            .from('projects')
+            .from('projectos')
             .update(this.toDbFormat(project))
             .eq('id', project.id);
 
@@ -90,7 +90,7 @@ const DB = {
 
     async deleteProject(id) {
         const { error } = await supabase
-            .from('projects')
+            .from('projectos')
             .delete()
             .eq('id', id);
 
@@ -105,7 +105,7 @@ const DB = {
         // For mass updates (reordering), upsert is best
         const updates = projects.map(this.toDbFormat);
         const { error } = await supabase
-            .from('projects')
+            .from('projectos')
             .upsert(updates);
 
         if (error) {
