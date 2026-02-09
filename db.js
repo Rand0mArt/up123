@@ -1,18 +1,35 @@
-// Check Supabase CDN loaded
-if (typeof window.supabase === 'undefined') {
-    console.error('Supabase CDN no cargado! Verifica conexión a internet.');
-    alert('Error: No se pudo cargar Supabase. Verifica tu conexión e intenta de nuevo.');
-}
+// ===== Database Connection Module =====
+// Waits for Supabase CDN to be ready, then initializes
 
 const SUPABASE_URL = 'https://czdialdmmsfiguuxmojr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZGlhbGRtbXNmaWd1dXhtb2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1OTA0MzcsImV4cCI6MjA4NjE2NjQzN30.-_pYzLDDG5ZdLOoJ-MgfgR0hOC_McYDNUGVvy7nAI_E';
 
-let supabase;
-try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('Supabase conectado correctamente');
-} catch (e) {
-    console.error('Error creando cliente Supabase:', e);
+// Wait for Supabase CDN to load (it loads async sometimes)
+function waitForSupabase(maxWait = 10000) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
+        const check = () => {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                resolve(window.supabase);
+            } else if (Date.now() - start > maxWait) {
+                reject(new Error('Supabase CDN no cargó después de ' + maxWait + 'ms'));
+            } else {
+                setTimeout(check, 100);
+            }
+        };
+        check();
+    });
+}
+
+// Initialize DB object immediately (methods will wait for supabase)
+let supabaseClient = null;
+
+async function getSupabase() {
+    if (supabaseClient) return supabaseClient;
+    const sb = await waitForSupabase();
+    supabaseClient = sb.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase conectado correctamente');
+    return supabaseClient;
 }
 
 const DB = {
@@ -28,7 +45,6 @@ const DB = {
             cliente: project.cliente,
             fecha_inicio: project.fechaInicio || null,
             fecha_fin: project.fechaFin || null,
-            // Store everything else in data jsonb
             data: {
                 tasks: project.tasks || [],
                 conclusion: project.conclusion || null,
@@ -44,23 +60,23 @@ const DB = {
         };
     },
 
-    // Convert DB format to local project format
     fromDbFormat(row) {
         return {
             id: row.id,
             nombre: row.nombre,
             status: row.status,
-            order: parseFloat(row.order), // Ensure number
+            order: parseFloat(row.order),
             tipo: row.tipo,
             artista: row.artista,
             cliente: row.cliente,
             fechaInicio: row.fecha_inicio,
             fechaFin: row.fecha_fin,
-            ...row.data // Spread the jsonb data back to top level
+            ...row.data
         };
     },
 
     async fetchProjects() {
+        const supabase = await getSupabase();
         const { data, error } = await supabase
             .from('projectos')
             .select('*')
@@ -68,13 +84,13 @@ const DB = {
 
         if (error) {
             console.error('Error fetching projects:', error);
-            alert('Error leyendo base de datos: ' + error.message);
-            return [];
+            throw error;
         }
         return data.map(this.fromDbFormat);
     },
 
     async createProject(project) {
+        const supabase = await getSupabase();
         const { error } = await supabase
             .from('projectos')
             .insert(this.toDbFormat(project));
@@ -87,6 +103,7 @@ const DB = {
     },
 
     async updateProject(project) {
+        const supabase = await getSupabase();
         const { error } = await supabase
             .from('projectos')
             .update(this.toDbFormat(project))
@@ -100,6 +117,7 @@ const DB = {
     },
 
     async deleteProject(id) {
+        const supabase = await getSupabase();
         const { error } = await supabase
             .from('projectos')
             .delete()
@@ -113,7 +131,7 @@ const DB = {
     },
 
     async saveAll(projects) {
-        // For mass updates (reordering), upsert is best
+        const supabase = await getSupabase();
         const updates = projects.map(this.toDbFormat);
         const { error } = await supabase
             .from('projectos')
@@ -126,4 +144,6 @@ const DB = {
     }
 };
 
+// Expose DB globally IMMEDIATELY - methods handle async internally
 window.DB = DB;
+console.log('✅ DB module loaded');
