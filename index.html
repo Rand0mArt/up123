@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Proyectos | Kanban</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="db.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="app-title">Proyectos</h1>
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="kanban" title="Vista Kanban">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="3" width="5" height="18" rx="1" />
+                                <rect x="10" y="3" width="5" height="18" rx="1" />
+                                <rect x="17" y="3" width="5" height="18" rx="1" />
+                            </svg>
+                        </button>
+                        <button class="view-btn" data-view="history" title="Historial">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M3 6h18M3 12h18M3 18h18" />
+                            </svg>
+                        </button>
+                        <button class="view-btn" data-view="calendar" title="Calendario">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" />
+                                <path d="M16 2v4M8 2v4M3 10h18" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn-new-project" onclick="openModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Nuevo Proyecto
+                </button>
+            </div>
+        </header>
+
+        <!-- Kanban Board View -->
+        <main class="kanban-board" id="kanban-board">
+            <div class="kanban-column" data-status="nuevo">
+                <div class="column-header">
+                    <span class="column-dot nuevo"></span>
+                    <h2>Nuevo</h2>
+                    <span class="column-count" id="count-nuevo">0</span>
+                </div>
+                <div class="column-cards" id="cards-nuevo"></div>
+            </div>
+            <div class="kanban-column" data-status="en-curso">
+                <div class="column-header">
+                    <span class="column-dot en-curso"></span>
+                    <h2>En Curso</h2>
+                    <span class="column-count" id="count-en-curso">0</span>
+                </div>
+                <div class="column-cards" id="cards-en-curso"></div>
+            </div>
+            <div class="kanban-column" data-status="completo">
+                <div class="column-header">
+                    <span class="column-dot completo"></span>
+                    <h2>Completo</h2>
+                    <span class="column-count" id="count-completo">0</span>
+                </div>
+                <div class="column-cards" id="cards-completo"></div>
+            </div>
+            <div class="kanban-column" data-status="terminado">
+                <div class="column-header">
+                    <span class="column-dot terminado"></span>
+                    <h2>Terminado</h2>
+                    <span class="column-count" id="count-terminado">0</span>
+                </div>
+                <div class="column-cards" id="cards-terminado"></div>
+            </div>
+        </main>
+
+        <!-- History View -->
+        <main class="history-view" id="history-view" style="display: none;">
+            <div class="history-header">
+                <h2>Historial de Proyectos Terminados</h2>
+                <span class="history-count" id="history-count">0 proyectos</span>
+            </div>
+            <div class="history-list" id="history-list">
+                <!-- History items will be inserted here -->
+            </div>
+        </main>
+
+        <!-- Calendar View -->
+        <main class="calendar-view" id="calendar-view" style="display: none;">
+            <div class="calendar-header">
+                <div class="calendar-nav">
+                    <button class="calendar-nav-btn" onclick="prevMonth()" title="Mes anterior">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                    </button>
+                    <h2 id="calendar-month-year">Febrero 2026</h2>
+                    <button class="calendar-nav-btn" onclick="nextMonth()" title="Mes siguiente">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </button>
+                </div>
+                <button class="btn-today" onclick="goToToday()">Hoy</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-weekdays">
+                    <span>Dom</span>
+                    <span>Lun</span>
+                    <span>Mar</span>
+                    <span>Mié</span>
+                    <span>Jue</span>
+                    <span>Vie</span>
+                    <span>Sáb</span>
+                </div>
+                <div class="calendar-days" id="calendar-days">
+                    <!-- Calendar days will be inserted here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: New Project -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="project-modal">
+            <div class="modal-header">
+                <h2>Nuevo Proyecto</h2>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="project-form" onsubmit="handleSubmit(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="nombre">Nombre del proyecto *</label>
+                        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Mural Centro Comercial">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipo">Servicio *</label>
+                        <select id="tipo" name="tipo" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Mural">Mural</option>
+                            <option value="Obra Original">Obra Original</option>
+                            <option value="Tattoo">Tattoo</option>
+                            <option value="Ilustración">Ilustración</option>
+                            <option value="Diseño">Diseño</option>
+                            <option value="Fotografía">Fotografía</option>
+                            <option value="Video">Video</option>
+                            <option value="Merch">Merch</option>
+                            <option value="Producto">Producto</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="artista">Artista *</label>
+                        <input type="text" id="artista" name="artista" required placeholder="Nombre del artista">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cliente">Cliente *</label>
+                        <input type="text" id="cliente" name="cliente" required placeholder="Nombre del cliente">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contacto">Contacto</label>
+                        <input type="text" id="contacto" name="contacto" placeholder="Email o teléfono">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="ubicacion">Ubicación</label>
+                        <input type="text" id="ubicacion" name="ubicacion" placeholder="Dirección o ciudad">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="formato">Formato / Soporte</label>
+                        <input type="text" id="formato" name="formato" placeholder="Ej: Lienzo, pared, digital">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="medidas">Medidas</label>
+                        <input type="text" id="medidas" name="medidas" placeholder="Ej: 2m x 3m">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="presupuesto">Presupuesto</label>
+                        <input type="number" id="presupuesto" name="presupuesto" placeholder="0.00" step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha-inicio">Fecha de inicio</label>
+                        <input type="date" id="fecha-inicio" name="fecha-inicio">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha-fin">Fecha Estimada</label>
+                        <input type="date" id="fecha-fin" name="fecha-fin">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="contexto">Contexto</label>
+                        <textarea id="contexto" name="contexto" rows="3"
+                            placeholder="Descripción del proyecto, referencias, notas..."></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="drive-link">Link Google Drive</label>
+                        <input type="url" id="drive-link" name="drive-link" placeholder="https://drive.google.com/...">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-submit">Crear Proyecto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Project Details -->
+    <div class="modal-overlay" id="detail-modal-overlay">
+        <div class="modal modal-detail" id="detail-modal">
+            <div class="modal-header">
+                <h2 id="detail-title">Detalles del Proyecto</h2>
+                <div class="modal-header-actions">
+                    <button class="btn-icon" onclick="toggleEditMode()" title="Editar" id="edit-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                    </button>
+                    <button class="modal-close" onclick="closeDetailModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Mode -->
+            <div class="detail-content" id="detail-content">
+                <!-- Project details will be inserted here -->
+            </div>
+
+            <!-- Tasks Checklist Section -->
+            <div class="tasks-section" id="tasks-section">
+                <div class="tasks-header">
+                    <h3>📋 Tareas</h3>
+                    <button class="btn-add-task" onclick="addTask()" title="Agregar tarea">+ Añadir</button>
+                </div>
+                <div class="tasks-list" id="tasks-list">
+                    <!-- Tasks will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Edit Mode (hidden by default) -->
+            <form class="edit-form" id="edit-form" style="display: none;" onsubmit="saveProjectEdits(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="edit-nombre">Nombre del proyecto *</label>
+                        <input type="text" id="edit-nombre" name="nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-tipo">Tipo *</label>
+                        <select id="edit-tipo" name="tipo" required>
+                            <option value="Mural">Mural</option>
+                            <option value="Pintura">Pintura</option>
+                            <option value="Escultura">Escultura</option>
+                            <option value="Ilustración">Ilustración</option>
+                            <option value="Diseño">Diseño</option>
+                            <option value="Fotografía">Fotografía</option>
+                            <option value="Video">Video</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-artista">Artista *</label>
+                        <input type="text" id="edit-artista" name="artista" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-cliente">Cliente *</label>
+                        <input type="text" id="edit-cliente" name="cliente" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-contacto">Contacto</label>
+                        <input type="text" id="edit-contacto" name="contacto">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit-ubicacion">Ubicación</label>
+                        <input type="text" id="edit-ubicacion" name="ubicacion">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-formato">Formato / Soporte</label>
+                        <input type="text" id="edit-formato" name="formato">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-medidas">Medidas</label>
+                        <input type="text" id="edit-medidas" name="medidas">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-presupuesto">Presupuesto</label>
+                        <input type="number" id="edit-presupuesto" name="presupuesto" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-fecha-inicio">Fecha de inicio</label>
+                        <input type="date" id="edit-fecha-inicio" name="fecha-inicio">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-fecha-fin">Fecha Estimada</label>
+                        <input type="date" id="edit-fecha-fin" name="fecha-fin">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit-contexto">Contexto</label>
+                        <textarea id="edit-contexto" name="contexto" rows="3"></textarea>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit-drive-link">Link Google Drive</label>
+                        <input type="url" id="edit-drive-link" name="drive-link">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="cancelEdit()">Cancelar</button>
+                    <button type="submit" class="btn-submit">Guardar Cambios</button>
+                </div>
+            </form>
+
+            <div class="detail-actions" id="detail-actions">
+                <button class="btn-delete" onclick="deleteProject()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Conclusion (when moving to Terminado) -->
+    <div class="modal-overlay" id="conclusion-modal-overlay">
+        <div class="modal modal-conclusion" id="conclusion-modal">
+            <div class="modal-header">
+                <h2>🎉 Proyecto Terminado</h2>
+                <button class="modal-close" onclick="cancelConclusion()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="conclusion-form" onsubmit="handleConclusionSubmit(event)">
+                <p class="conclusion-intro">Añade los datos de conclusión del proyecto:</p>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="fecha-conclusion">Fecha de conclusión *</label>
+                        <input type="date" id="fecha-conclusion" name="fecha-conclusion" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="calificacion">Calificación del proyecto</label>
+                        <select id="calificacion" name="calificacion">
+                            <option value="">Seleccionar...</option>
+                            <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                            <option value="4">⭐⭐⭐⭐ Muy bueno</option>
+                            <option value="3">⭐⭐⭐ Bueno</option>
+                            <option value="2">⭐⭐ Regular</option>
+                            <option value="1">⭐ Malo</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="notas-conclusion">Notas de conclusión</label>
+                        <textarea id="notas-conclusion" name="notas-conclusion" rows="3"
+                            placeholder="Resultados, aprendizajes, feedback del cliente..."></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="link-resultado">Link del resultado final</label>
+                        <input type="url" id="link-resultado" name="link-resultado" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="cancelConclusion()">Cancelar</button>
+                    <button type="submit" class="btn-submit btn-success">Finalizar Proyecto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
