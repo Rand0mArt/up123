@@ -57,6 +57,7 @@ const DB = {
 
         if (error) {
             console.error('Error fetching projects:', error);
+            alert('Error leyendo base de datos: ' + error.message);
             return [];
         }
         return data.map(this.fromDbFormat);
@@ -67,7 +68,10 @@ const DB = {
             .from('projects')
             .insert(this.toDbFormat(project));
 
-        if (error) console.error('Error creating project:', error);
+        if (error) {
+            console.error('Error creating project:', error);
+            alert('Error guardando proyecto: ' + error.message);
+        }
         return !error;
     },
 
@@ -77,7 +81,10 @@ const DB = {
             .update(this.toDbFormat(project))
             .eq('id', project.id);
 
-        if (error) console.error('Error updating project:', error);
+        if (error) {
+            console.error('Error updating project:', error);
+            alert('Error actualizando proyecto: ' + error.message);
+        }
         return !error;
     },
 
@@ -87,7 +94,10 @@ const DB = {
             .delete()
             .eq('id', id);
 
-        if (error) console.error('Error deleting project:', error);
+        if (error) {
+            console.error('Error deleting project:', error);
+            alert('Error eliminando proyecto: ' + error.message);
+        }
         return !error;
     },
 
@@ -98,6 +108,9 @@ const DB = {
             .from('projects')
             .upsert(updates);
 
-        if (error) console.error('Error saving all:', error);
+        if (error) {
+            console.error('Error saving all:', error);
+            alert('Error guardando cambios: ' + error.message);
+        }
     }
 };

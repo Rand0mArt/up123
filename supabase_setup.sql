@@ -1,3 +1,6 @@
+-- Reset table if exists (for fresh install)
+drop table if exists public.projects;
+
 -- Create the projects table
 create table public.projects (
   id text primary key,
