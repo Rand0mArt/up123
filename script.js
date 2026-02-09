@@ -898,38 +898,3 @@ function goToToday() {
     renderCalendar();
 }
 
-// ===== Initialization & Migration =====
-document.addEventListener('DOMContentLoaded', async () => {
-    // Initial Render (Empty)
-    renderKanban();
-    updateCounts();
-
-    // Fetch from Supabase
-    try {
-        const dbProjects = await DB.fetchProjects();
-
-        // Check for local data to migrate
-        const localProjects = JSON.parse(localStorage.getItem('kanban-projects') || '[]');
-
-        if (dbProjects.length === 0 && localProjects.length > 0) {
-            if (confirm('Se detectaron datos locales. ¿Deseas migrarlos a la nueva base de datos en la nube?')) {
-                // Migrate
-                await DB.saveAll(localProjects);
-                projects = await DB.fetchProjects(); // Reload from DB
-                alert('Migración completada. Tus datos están seguros en Supabase.');
-                // Optional: localStorage.removeItem('kanban-projects');
-            } else {
-                projects = dbProjects;
-            }
-        } else {
-            projects = dbProjects;
-        }
-    } catch (e) {
-        console.error('Error initializing:', e);
-    }
-
-    // Re-render with data
-    renderKanban();
-    updateCounts();
-});
-
