@@ -1,5 +1,6 @@
 // ===== State Management =====
 let projects = []; // Initialize empty, load from DB
+console.log('Kanban Layout v2.0 - Loaded');
 
 let currentProjectId = null;
 let pendingTerminadoProjectId = null;
