@@ -17,21 +17,34 @@ const conclusionForm = document.getElementById('conclusion-form');
 const kanbanBoard = document.getElementById('kanban-board');
 const historyView = document.getElementById('history-view');
 const calendarView = document.getElementById('calendar-view');
+// ===== Wait for DB to be ready =====
+function waitForDB(maxWait = 5000) {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        const check = () => {
+            if (typeof window.DB !== 'undefined') {
+                console.log('DB ready after', Date.now() - startTime, 'ms');
+                resolve(window.DB);
+            } else if (Date.now() - startTime > maxWait) {
+                reject(new Error('DB no disponible después de ' + maxWait + 'ms'));
+            } else {
+                setTimeout(check, 50);
+            }
+        };
+        check();
+    });
+}
 
 // ===== Initialize =====
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load projects from database
-    if (typeof DB !== 'undefined') {
-        try {
-            projects = await DB.fetchProjects();
-            console.log('Loaded', projects.length, 'projects from database');
-        } catch (e) {
-            console.error('Failed to load projects:', e);
-            alert('Error cargando proyectos: ' + e.message);
-        }
-    } else {
-        console.error('DB object not defined! Check db.js loading.');
-        alert('Error: No se pudo conectar a la base de datos. Recarga la página.');
+    // Wait for DB to be ready (handles race condition with db.js)
+    try {
+        await waitForDB(5000);
+        projects = await DB.fetchProjects();
+        console.log('Loaded', projects.length, 'projects from database');
+    } catch (e) {
+        console.error('Error inicializando:', e);
+        alert('Error conectando a la base de datos: ' + e.message);
     }
     renderKanban();
     updateCounts();
