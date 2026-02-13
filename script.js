@@ -399,6 +399,18 @@ function toggleEditMode() {
         document.getElementById('edit-fecha-fin').value = project.fechaFin || '';
         document.getElementById('edit-contexto').value = project.contexto || '';
         document.getElementById('edit-drive-link').value = project.driveLink || '';
+
+        // Show/populate conclusion fields for terminado projects
+        const conclusionSection = document.getElementById('edit-conclusion-section');
+        if (project.status === 'terminado') {
+            conclusionSection.style.display = 'block';
+            document.getElementById('edit-gastos').value = project.gastos || '';
+            document.getElementById('edit-calificacion').value = project.conclusion?.calificacion || '';
+            document.getElementById('edit-notas-conclusion').value = project.conclusion?.notas || '';
+            document.getElementById('edit-link-resultado').value = project.conclusion?.linkResultado || '';
+        } else {
+            conclusionSection.style.display = 'none';
+        }
     } else {
         cancelEdit();
     }
@@ -438,6 +450,21 @@ function saveProjectEdits(event) {
         driveLink: formData.get('drive-link')
     };
 
+    // Save conclusion fields for terminado projects
+    if (projects[projectIndex].status === 'terminado') {
+        const gastos = parseFloat(formData.get('gastos')) || 0;
+        const presupuesto = parseFloat(projects[projectIndex].presupuesto) || 0;
+        projects[projectIndex].gastos = gastos;
+        projects[projectIndex].utilidad = presupuesto - gastos;
+
+        if (!projects[projectIndex].conclusion) {
+            projects[projectIndex].conclusion = {};
+        }
+        projects[projectIndex].conclusion.calificacion = formData.get('calificacion') || '';
+        projects[projectIndex].conclusion.notas = formData.get('notas-conclusion') || '';
+        projects[projectIndex].conclusion.linkResultado = formData.get('link-resultado') || '';
+    }
+
     saveProjects();
 
     document.getElementById('detail-title').textContent = projects[projectIndex].nombre;
@@ -445,6 +472,7 @@ function saveProjectEdits(event) {
     renderTasks(projects[projectIndex]);
     cancelEdit();
     renderKanban();
+    renderHistory();
 }
 
 // ===== Tasks/Checklist =====

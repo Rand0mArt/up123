@@ -418,6 +418,40 @@
                         <input type="url" id="edit-drive-link" name="drive-link">
                     </div>
                 </div>
+
+                <!-- Conclusion fields (terminado only, toggled via JS) -->
+                <div id="edit-conclusion-section"
+                    style="display: none; margin-top: 16px; padding-top: 16px; border-top: 2px solid var(--terminado);">
+                    <h4
+                        style="color: var(--terminado); margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                        ✓ Datos de Conclusión</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="edit-gastos">💰 Gastos Totales</label>
+                            <input type="number" id="edit-gastos" name="gastos" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-calificacion">Calificación</label>
+                            <select id="edit-calificacion" name="calificacion">
+                                <option value="">Sin calificación</option>
+                                <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                                <option value="4">⭐⭐⭐⭐ Muy bueno</option>
+                                <option value="3">⭐⭐⭐ Bueno</option>
+                                <option value="2">⭐⭐ Regular</option>
+                                <option value="1">⭐ Malo</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="edit-notas-conclusion">Notas finales</label>
+                            <textarea id="edit-notas-conclusion" name="notas-conclusion" rows="3"></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="edit-link-resultado">Link resultado</label>
+                            <input type="url" id="edit-link-resultado" name="link-resultado">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn-cancel" onclick="cancelEdit()">Cancelar</button>
                     <button type="submit" class="btn-submit">Guardar Cambios</button>
