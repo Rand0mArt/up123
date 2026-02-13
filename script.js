@@ -404,6 +404,9 @@ function toggleEditMode() {
         const conclusionSection = document.getElementById('edit-conclusion-section');
         if (project.status === 'terminado') {
             conclusionSection.style.display = 'block';
+            // Populate fecha de conclusión (what history displays)
+            const fechaConc = project.conclusion?.fecha || project.completedAt || '';
+            document.getElementById('edit-fecha-conclusion').value = fechaConc ? fechaConc.substring(0, 10) : '';
             document.getElementById('edit-gastos').value = project.gastos || '';
             document.getElementById('edit-calificacion').value = project.conclusion?.calificacion || '';
             document.getElementById('edit-notas-conclusion').value = project.conclusion?.notas || '';
@@ -460,6 +463,9 @@ function saveProjectEdits(event) {
         if (!projects[projectIndex].conclusion) {
             projects[projectIndex].conclusion = {};
         }
+        const fechaConclusionVal = formData.get('fecha-conclusion') || '';
+        projects[projectIndex].conclusion.fecha = fechaConclusionVal;
+        projects[projectIndex].completedAt = fechaConclusionVal;
         projects[projectIndex].conclusion.calificacion = formData.get('calificacion') || '';
         projects[projectIndex].conclusion.notas = formData.get('notas-conclusion') || '';
         projects[projectIndex].conclusion.linkResultado = formData.get('link-resultado') || '';
