@@ -114,12 +114,10 @@ function handleDragOver(e) {
     const draggingCard = document.querySelector('.dragging');
     const afterElement = getDragAfterElement(column, e.clientY);
 
-    if (afterElement == null) {
-        if (draggingCard && draggingCard.parentElement === column) {
+    if (draggingCard) {
+        if (afterElement == null) {
             column.appendChild(draggingCard);
-        }
-    } else {
-        if (draggingCard && draggingCard.parentElement === column) {
+        } else {
             column.insertBefore(draggingCard, afterElement);
         }
     }
