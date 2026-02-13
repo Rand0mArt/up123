@@ -1,29 +1,45 @@
-// ===== State Management =====
-let projects = []; // Initialize empty, load from DB
+// ===== Kanban App v2.0 =====
+let projects = [];
 console.log('Kanban Layout v2.0 - Loaded');
 
 let currentProjectId = null;
 let pendingTerminadoProjectId = null;
 let currentView = 'kanban';
 let isEditMode = false;
-let calendarDate = new Date(); // Current month being viewed
+let profitChart = null;
 
-// ===== DOM Elements =====
+// ===== Service Color Identity =====
+const SERVICE_COLORS = {
+    'Mural': { bg: 'rgba(194,120,48,0.15)', border: '#c27830', label: '#c27830' },
+    'Obra Original': { bg: 'rgba(139,92,246,0.15)', border: '#8b5cf6', label: '#8b5cf6' },
+    'Tattoo': { bg: 'rgba(236,72,153,0.15)', border: '#ec4899', label: '#ec4899' },
+    'Ilustración': { bg: 'rgba(34,211,238,0.15)', border: '#22d3ee', label: '#22d3ee' },
+    'Diseño': { bg: 'rgba(232,62,140,0.15)', border: '#e83e8c', label: '#e83e8c' },
+    'Fotografía': { bg: 'rgba(251,191,36,0.15)', border: '#fbbf24', label: '#fbbf24' },
+    'Video': { bg: 'rgba(239,68,68,0.15)', border: '#ef4444', label: '#ef4444' },
+    'Merch': { bg: 'rgba(16,185,129,0.15)', border: '#10b981', label: '#10b981' },
+    'Producto': { bg: 'rgba(99,102,241,0.15)', border: '#6366f1', label: '#6366f1' },
+    'Otro': { bg: 'rgba(161,161,166,0.15)', border: '#a1a1a6', label: '#a1a1a6' }
+};
+
+function getServiceColor(tipo) {
+    return SERVICE_COLORS[tipo] || SERVICE_COLORS['Otro'];
+}
+
+// DOM References
+const projectForm = document.getElementById('project-form');
 const modalOverlay = document.getElementById('modal-overlay');
 const detailModalOverlay = document.getElementById('detail-modal-overlay');
 const conclusionModalOverlay = document.getElementById('conclusion-modal-overlay');
-const projectForm = document.getElementById('project-form');
 const conclusionForm = document.getElementById('conclusion-form');
-const kanbanBoard = document.getElementById('kanban-board');
-const historyView = document.getElementById('history-view');
-const calendarView = document.getElementById('calendar-view');
 
-// ===== Initialize =====
+let calendarDate = new Date();
+
+// ===== Init =====
 document.addEventListener('DOMContentLoaded', async () => {
-    // DB is always defined now (methods wait for Supabase internally)
     try {
         projects = await DB.fetchProjects();
-        console.log('✅ Loaded', projects.length, 'projects from database');
+        console.log(`✅ ${projects.length} proyectos cargados`);
     } catch (e) {
         console.error('Error cargando proyectos:', e);
         alert('Error conectando a la base de datos: ' + e.message);
@@ -37,9 +53,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function setTodayAsDefault() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha-conclusion').value = today;
-    document.getElementById('fecha-inicio').value = today;
-    document.getElementById('fecha-fin').value = today;
+    const fechaInicio = document.getElementById('fecha-inicio');
+    const fechaConclusion = document.getElementById('fecha-conclusion');
+    if (fechaInicio && !fechaInicio.value) fechaInicio.value = today;
+    if (fechaConclusion && !fechaConclusion.value) fechaConclusion.value = today;
 }
 
 // ===== View Toggle =====
@@ -47,49 +64,45 @@ function initViewToggle() {
     const viewBtns = document.querySelectorAll('.view-btn');
     viewBtns.forEach(btn => {
         btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            currentView = view;
+
             viewBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentView = btn.dataset.view;
 
-            kanbanBoard.style.display = 'none';
-            historyView.style.display = 'none';
-            calendarView.style.display = 'none';
+            document.getElementById('kanban-board').style.display = view === 'kanban' ? 'grid' : 'none';
+            document.getElementById('history-view').style.display = view === 'history' ? 'block' : 'none';
+            document.getElementById('calendar-view').style.display = view === 'calendar' ? 'block' : 'none';
+            document.getElementById('analytics-view').style.display = view === 'analytics' ? 'flex' : 'none';
 
-            if (currentView === 'kanban') {
-                kanbanBoard.style.display = 'grid';
-            } else if (currentView === 'history') {
-                historyView.style.display = 'block';
-                renderHistory();
-            } else if (currentView === 'calendar') {
-                calendarView.style.display = 'block';
-                renderCalendar();
-            }
+            if (view === 'history') renderHistory();
+            if (view === 'calendar') renderCalendar();
+            if (view === 'analytics') renderAnalytics();
         });
     });
 }
 
 // ===== Drag and Drop =====
 function initDragAndDrop() {
-    const columns = document.querySelectorAll('.column-cards');
-
-    columns.forEach(column => {
-        column.addEventListener('dragover', handleDragOver);
-        column.addEventListener('dragenter', handleDragEnter);
-        column.addEventListener('dragleave', handleDragLeave);
-        column.addEventListener('drop', handleDrop);
+    const dropZones = document.querySelectorAll('.column-cards');
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', handleDragOver);
+        zone.addEventListener('dragenter', handleDragEnter);
+        zone.addEventListener('dragleave', handleDragLeave);
+        zone.addEventListener('drop', handleDrop);
     });
 }
 
 function handleDragStart(e) {
-    e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+    e.dataTransfer.setData('text/plain', e.currentTarget.dataset.id);
+    e.currentTarget.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
 }
 
 function handleDragEnd(e) {
-    e.target.classList.remove('dragging');
-    document.querySelectorAll('.column-cards').forEach(col => {
-        col.classList.remove('drag-over');
+    e.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.column-cards').forEach(zone => {
+        zone.classList.remove('drag-over');
     });
 }
 
@@ -97,11 +110,8 @@ function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
-    // Get the element we're dragging over
     const column = e.currentTarget;
     const draggingCard = document.querySelector('.dragging');
-
-    // Find the card below cursor for sorting
     const afterElement = getDragAfterElement(column, e.clientY);
 
     if (afterElement == null) {
@@ -117,7 +127,6 @@ function handleDragOver(e) {
 
 function getDragAfterElement(column, y) {
     const draggableElements = [...column.querySelectorAll('.project-card:not(.dragging)')];
-
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -159,7 +168,6 @@ function handleDrop(e) {
     } else {
         projects[projectIndex].status = newStatus;
 
-        // Save the new order from DOM
         const cardIds = [...column.querySelectorAll('.project-card')].map(card => card.dataset.id);
         cardIds.forEach((id, index) => {
             const proj = projects.find(p => p.id === id);
@@ -174,7 +182,7 @@ function handleDrop(e) {
 
 // ===== Modal Functions =====
 function openModal() {
-    setTodayAsDefault(); // Pre-fill dates when modal opens
+    setTodayAsDefault();
     modalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
@@ -193,7 +201,6 @@ function openDetailModal(id) {
 
     document.getElementById('detail-title').textContent = project.nombre;
 
-    // Show view mode, hide edit mode
     document.getElementById('detail-content').style.display = 'block';
     document.getElementById('tasks-section').style.display = 'block';
     document.getElementById('edit-form').style.display = 'none';
@@ -212,18 +219,26 @@ function renderDetailContent(project) {
     let conclusionHtml = '';
     let deadlineHtml = '';
 
-    // Check deadline status
+    // Deadline status
     const deadlineStatus = getDeadlineStatus(project);
     if (deadlineStatus && project.status !== 'terminado') {
+        const colorMap = { urgent: 'var(--danger)', warning: '#f59e0b', safe: 'var(--success)' };
+        const bgMap = { urgent: 'rgba(239, 68, 68, 0.1)', warning: 'rgba(245, 158, 11, 0.1)', safe: 'rgba(16, 185, 129, 0.1)' };
         deadlineHtml = `
-            <div class="detail-row" style="background: ${deadlineStatus.urgent ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; margin: -24px -24px 16px; padding: 12px 24px; border-radius: 8px 8px 0 0;">
-                <span class="detail-label" style="color: ${deadlineStatus.urgent ? 'var(--danger)' : 'var(--en-curso)'}; font-weight: 600;">⚠️ ${deadlineStatus.message}</span>
+            <div class="detail-row" style="background: ${bgMap[deadlineStatus.level]}; margin: -24px -24px 16px; padding: 12px 24px; border-radius: 8px 8px 0 0;">
+                <span class="detail-label" style="color: ${colorMap[deadlineStatus.level]}; font-weight: 600;">${deadlineStatus.icon} ${deadlineStatus.message}</span>
                 <span class="detail-value"></span>
             </div>
         `;
     }
 
+    // Conclusion section for completed projects
     if (project.status === 'terminado' && project.conclusion) {
+        const utilidad = parseFloat(project.utilidad) || 0;
+        const gastos = parseFloat(project.gastos) || 0;
+        const utilColor = utilidad >= 0 ? 'var(--success)' : 'var(--danger)';
+        const utilSign = utilidad >= 0 ? '+' : '';
+
         conclusionHtml = `
             <div class="detail-row" style="background: rgba(139, 92, 246, 0.1); margin: -24px -24px 10px; padding: 15px 24px; border-radius: 8px 8px 0 0;">
                 <span class="detail-label" style="color: var(--terminado); font-weight: 600;">✓ CONCLUSIÓN</span>
@@ -234,8 +249,12 @@ function renderDetailContent(project) {
                 <span class="detail-value">${project.conclusion.fecha || '-'}</span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">Monto final</span>
-                <span class="detail-value" style="color: var(--success); font-weight: 600;">${project.conclusion.montoFinal ? '$' + parseFloat(project.conclusion.montoFinal).toLocaleString() : '-'}</span>
+                <span class="detail-label">💰 Gasto total</span>
+                <span class="detail-value" style="font-weight: 600;">$${gastos.toLocaleString()}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📊 Utilidad</span>
+                <span class="detail-value" style="color: ${utilColor}; font-weight: 700; font-size: 16px;">${utilSign}$${utilidad.toLocaleString()}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Calificación</span>
@@ -330,6 +349,15 @@ function closeDetailModal() {
 
 function openConclusionModal() {
     setTodayAsDefault();
+    // Show presupuesto hint if available
+    if (pendingTerminadoProjectId) {
+        const project = projects.find(p => p.id === pendingTerminadoProjectId);
+        const hint = document.getElementById('presupuesto-hint');
+        if (project && project.presupuesto && hint) {
+            hint.textContent = `Presupuesto del proyecto: $${parseFloat(project.presupuesto).toLocaleString()}`;
+            hint.style.color = 'var(--text-muted)';
+        }
+    }
     conclusionModalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
@@ -354,14 +382,12 @@ function toggleEditMode() {
     isEditMode = !isEditMode;
 
     if (isEditMode) {
-        // Switch to edit mode
         document.getElementById('detail-content').style.display = 'none';
         document.getElementById('tasks-section').style.display = 'none';
         document.getElementById('edit-form').style.display = 'block';
         document.getElementById('detail-actions').style.display = 'none';
         document.getElementById('edit-btn').classList.add('active');
 
-        // Populate form
         document.getElementById('edit-nombre').value = project.nombre || '';
         document.getElementById('edit-tipo').value = project.tipo || '';
         document.getElementById('edit-artista').value = project.artista || '';
@@ -416,7 +442,6 @@ function saveProjectEdits(event) {
 
     saveProjects();
 
-    // Update title and refresh view
     document.getElementById('detail-title').textContent = projects[projectIndex].nombre;
     renderDetailContent(projects[projectIndex]);
     renderTasks(projects[projectIndex]);
@@ -466,7 +491,6 @@ function addTask() {
     saveProjects();
     renderTasks(projects[projectIndex]);
 
-    // Focus on the new task input
     setTimeout(() => {
         const inputs = document.querySelectorAll('.task-item .task-text');
         if (inputs.length > 0) {
@@ -509,7 +533,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ===== Deadline Functions =====
+// ===== Deadline Functions (v2.0 — 3 levels) =====
 function getDeadlineStatus(project) {
     if (!project.fechaFin || project.status === 'terminado') return null;
 
@@ -522,14 +546,14 @@ function getDeadlineStatus(project) {
     const diffDays = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-        return { urgent: true, message: `Vencido hace ${Math.abs(diffDays)} día${Math.abs(diffDays) !== 1 ? 's' : ''}` };
-    } else if (diffDays === 0) {
-        return { urgent: true, message: 'Vence hoy' };
-    } else if (diffDays <= 3) {
-        return { urgent: false, message: `Vence en ${diffDays} día${diffDays !== 1 ? 's' : ''}` };
+        return { level: 'urgent', icon: '🔴', message: `Vencido hace ${Math.abs(diffDays)} día${Math.abs(diffDays) !== 1 ? 's' : ''}`, days: diffDays };
+    } else if (diffDays <= 2) {
+        return { level: 'urgent', icon: '🔴', message: `${diffDays === 0 ? 'Vence hoy' : `Vence en ${diffDays} día${diffDays !== 1 ? 's' : ''}`}`, days: diffDays };
+    } else if (diffDays <= 6) {
+        return { level: 'warning', icon: '🟡', message: `Vence en ${diffDays} días`, days: diffDays };
+    } else {
+        return { level: 'safe', icon: '🟢', message: `${diffDays} días restantes`, days: diffDays };
     }
-
-    return null;
 }
 
 function getTaskProgress(project) {
@@ -565,6 +589,8 @@ function handleSubmit(event) {
         driveLink: formData.get('drive-link'),
         status: 'nuevo',
         tasks: [],
+        gastos: 0,
+        utilidad: 0,
         createdAt: new Date().toISOString()
     };
 
@@ -584,10 +610,15 @@ function handleConclusionSubmit(event) {
     const projectIndex = projects.findIndex(p => p.id === pendingTerminadoProjectId);
 
     if (projectIndex !== -1) {
+        const gastos = parseFloat(formData.get('gastos')) || 0;
+        const presupuesto = parseFloat(projects[projectIndex].presupuesto) || 0;
+        const utilidad = presupuesto - gastos;
+
         projects[projectIndex].status = 'terminado';
+        projects[projectIndex].gastos = gastos;
+        projects[projectIndex].utilidad = utilidad;
         projects[projectIndex].conclusion = {
             fecha: formData.get('fecha-conclusion'),
-            montoFinal: formData.get('monto-final'),
             calificacion: formData.get('calificacion'),
             notas: formData.get('notas-conclusion'),
             linkResultado: formData.get('link-resultado')
@@ -609,13 +640,11 @@ async function deleteProject() {
         const idToDelete = currentProjectId;
         projects = projects.filter(p => p.id !== idToDelete);
 
-        // Optimistic UI update
         closeDetailModal();
         renderKanban();
         renderHistory();
         updateCounts();
 
-        // Delete from DB
         await DB.deleteProject(idToDelete);
     }
 }
@@ -626,9 +655,18 @@ function renderKanban() {
 
     statuses.forEach(status => {
         const container = document.getElementById(`cards-${status}`);
-        const statusProjects = projects
+        let statusProjects = projects
             .filter(p => p.status === status)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        // Limit "terminado" column to last 3 projects
+        const isTerminado = status === 'terminado';
+        const totalTerminado = statusProjects.length;
+        if (isTerminado && statusProjects.length > 3) {
+            statusProjects = statusProjects
+                .sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt))
+                .slice(0, 3);
+        }
 
         if (statusProjects.length === 0) {
             container.innerHTML = `
@@ -641,15 +679,18 @@ function renderKanban() {
                 </div>
             `;
         } else {
-            container.innerHTML = statusProjects.map(project => {
+            let html = statusProjects.map(project => {
                 const deadlineStatus = getDeadlineStatus(project);
                 const taskProgress = getTaskProgress(project);
+                const sColor = getServiceColor(project.tipo);
 
-                let deadlineHtml = '';
+                // Deadline badge
+                let deadlineBadgeHtml = '';
                 if (deadlineStatus) {
-                    deadlineHtml = `<span class="deadline-warning ${deadlineStatus.urgent ? 'urgent' : 'soon'}">⚠ ${deadlineStatus.message}</span>`;
+                    deadlineBadgeHtml = `<span class="deadline-badge ${deadlineStatus.level}">${deadlineStatus.icon} ${deadlineStatus.message}</span>`;
                 }
 
+                // Task progress bar
                 let taskHtml = '';
                 if (taskProgress) {
                     taskHtml = `
@@ -662,16 +703,26 @@ function renderKanban() {
                     `;
                 }
 
+                // Utilidad badge for terminado
+                let utilidadHtml = '';
+                if (isTerminado && project.utilidad !== undefined) {
+                    const u = parseFloat(project.utilidad) || 0;
+                    const uClass = u >= 0 ? 'utilidad-positive' : 'utilidad-negative';
+                    const uSign = u >= 0 ? '+' : '';
+                    utilidadHtml = `<span class="utilidad-badge ${uClass}">${uSign}$${u.toLocaleString()}</span>`;
+                }
+
                 return `
                     <article class="project-card" 
                              draggable="true" 
                              data-id="${project.id}"
+                             style="border-left: 4px solid ${sColor.border};"
                              ondragstart="handleDragStart(event)"
                              ondragend="handleDragEnd(event)"
                              onclick="openDetailModal('${project.id}')">
-                        ${deadlineHtml}
-                        <span class="project-type">${project.tipo}</span>
-                        ${project.status === 'terminado' && project.conclusion ? '<span class="conclusion-badge">✓ Finalizado</span>' : ''}
+                        ${deadlineBadgeHtml}
+                        <span class="project-type" style="background: ${sColor.bg}; color: ${sColor.label};">${project.tipo}</span>
+                        ${isTerminado && project.conclusion ? '<span class="conclusion-badge">✓ Finalizado</span>' : ''}
                         <h3 class="project-name">${project.nombre}</h3>
                         <p class="project-artist">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -680,19 +731,56 @@ function renderKanban() {
                             </svg>
                             ${project.artista}
                         </p>
+                        ${utilidadHtml}
                         ${taskHtml}
                     </article>
                 `;
             }).join('');
+
+            // "Ver todos" link if truncated
+            if (isTerminado && totalTerminado > 3) {
+                html += `
+                    <div class="see-all-link" onclick="switchToHistory()">
+                        Ver todos (${totalTerminado}) →
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
         }
     });
 }
 
+function switchToHistory() {
+    const historyBtn = document.querySelector('.view-btn[data-view="history"]');
+    if (historyBtn) historyBtn.click();
+}
+
 function renderHistory() {
     const historyList = document.getElementById('history-list');
-    const terminadoProjects = projects
-        .filter(p => p.status === 'terminado')
-        .sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
+    const sortBy = document.getElementById('history-sort')?.value || 'fecha';
+
+    let terminadoProjects = projects.filter(p => p.status === 'terminado');
+
+    // Sort logic
+    switch (sortBy) {
+        case 'calificacion':
+            terminadoProjects.sort((a, b) => (parseInt(b.conclusion?.calificacion) || 0) - (parseInt(a.conclusion?.calificacion) || 0));
+            break;
+        case 'presupuesto':
+            terminadoProjects.sort((a, b) => (parseFloat(b.presupuesto) || 0) - (parseFloat(a.presupuesto) || 0));
+            break;
+        case 'utilidad':
+            terminadoProjects.sort((a, b) => (parseFloat(b.utilidad) || 0) - (parseFloat(a.utilidad) || 0));
+            break;
+        case 'tipo':
+            terminadoProjects.sort((a, b) => (a.tipo || '').localeCompare(b.tipo || ''));
+            break;
+        case 'fecha':
+        default:
+            terminadoProjects.sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
+            break;
+    }
 
     document.getElementById('history-count').textContent = `${terminadoProjects.length} proyecto${terminadoProjects.length !== 1 ? 's' : ''}`;
 
@@ -707,17 +795,23 @@ function renderHistory() {
             </div>
         `;
     } else {
-        historyList.innerHTML = terminadoProjects.map(project => `
-            <div class="history-item" onclick="openDetailModal('${project.id}')">
+        historyList.innerHTML = terminadoProjects.map(project => {
+            const sColor = getServiceColor(project.tipo);
+            const utilidad = parseFloat(project.utilidad) || 0;
+            const utilClass = utilidad >= 0 ? 'utilidad-positive' : 'utilidad-negative';
+            const utilSign = utilidad >= 0 ? '+' : '';
+
+            return `
+            <div class="history-item" onclick="openDetailModal('${project.id}')" style="border-left: 4px solid ${sColor.border};">
                 <div class="history-info">
                     <span class="history-name">${project.nombre}</span>
                     <span class="history-meta">${project.tipo} · ${project.artista} · ${project.cliente}</span>
                 </div>
                 <span class="history-date">${formatDate(project.conclusion?.fecha || project.completedAt)}</span>
-                <span class="history-budget">${project.conclusion?.montoFinal ? '$' + parseFloat(project.conclusion.montoFinal).toLocaleString() : '-'}</span>
+                <span class="history-budget ${utilClass}">${utilSign}$${utilidad.toLocaleString()}</span>
                 <span class="history-rating">${getStars(project.conclusion?.calificacion) || '-'}</span>
             </div>
-        `).join('');
+        `}).join('');
     }
 }
 
@@ -749,10 +843,127 @@ function updateCounts() {
 
 // ===== Storage =====
 async function saveProjects() {
-    // Save to DB (Fire and forget or await depending on need)
-    // For simple interactions, we might not await.
-    // However, saveAll uses upsert.
     await DB.saveAll(projects);
+}
+
+// ===== Analytics (Chart.js) =====
+function renderAnalytics() {
+    const terminados = projects.filter(p => p.status === 'terminado' && p.completedAt);
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Get month boundaries
+    const thisMonthStart = new Date(currentYear, currentMonth, 1);
+    const prevMonthStart = new Date(currentYear, currentMonth - 1, 1);
+    const prevMonthEnd = new Date(currentYear, currentMonth, 0);
+
+    // Calculate monthly utilities
+    let currentMonthUtil = 0;
+    let prevMonthUtil = 0;
+
+    // Build last 6 months data for the chart
+    const monthLabels = [];
+    const monthData = [];
+
+    for (let i = 5; i >= 0; i--) {
+        const mDate = new Date(currentYear, currentMonth - i, 1);
+        const mEnd = new Date(currentYear, currentMonth - i + 1, 0);
+        const label = mDate.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+        monthLabels.push(label);
+
+        const monthUtil = terminados
+            .filter(p => {
+                const d = new Date(p.completedAt);
+                return d >= mDate && d <= mEnd;
+            })
+            .reduce((sum, p) => sum + (parseFloat(p.utilidad) || 0), 0);
+
+        monthData.push(monthUtil);
+
+        if (i === 0) currentMonthUtil = monthUtil;
+        if (i === 1) prevMonthUtil = monthUtil;
+    }
+
+    // Update stat cards
+    const totalCompleted = terminados.length;
+    const totalUtilidad = terminados.reduce((sum, p) => sum + (parseFloat(p.utilidad) || 0), 0);
+    const avgProfit = totalCompleted > 0 ? totalUtilidad / totalCompleted : 0;
+
+    document.getElementById('stat-current-month').textContent = `$${currentMonthUtil.toLocaleString()}`;
+    document.getElementById('stat-current-month').className = `stat-value ${currentMonthUtil >= 0 ? 'utilidad-positive' : 'utilidad-negative'}`;
+
+    document.getElementById('stat-prev-month').textContent = `$${prevMonthUtil.toLocaleString()}`;
+    document.getElementById('stat-prev-month').className = `stat-value ${prevMonthUtil >= 0 ? 'utilidad-positive' : 'utilidad-negative'}`;
+
+    document.getElementById('stat-total-completed').textContent = totalCompleted;
+    document.getElementById('stat-avg-profit').textContent = `$${Math.round(avgProfit).toLocaleString()}`;
+    document.getElementById('stat-avg-profit').className = `stat-value ${avgProfit >= 0 ? 'utilidad-positive' : 'utilidad-negative'}`;
+
+    // Render Chart
+    const ctx = document.getElementById('profit-chart');
+    if (!ctx) return;
+
+    if (profitChart) {
+        profitChart.destroy();
+    }
+
+    profitChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: 'Utilidad ($)',
+                data: monthData,
+                backgroundColor: monthData.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+                borderColor: monthData.map(v => v >= 0 ? '#10b981' : '#ef4444'),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1a1a1d',
+                    titleColor: '#f5f5f7',
+                    bodyColor: '#a1a1a6',
+                    borderColor: '#2a2a2e',
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function (context) {
+                            const val = context.parsed.y;
+                            return `Utilidad: ${val >= 0 ? '+' : ''}$${val.toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(42, 42, 46, 0.5)' },
+                    ticks: { color: '#a1a1a6', font: { family: 'Inter' } }
+                },
+                y: {
+                    grid: { color: 'rgba(42, 42, 46, 0.5)' },
+                    ticks: {
+                        color: '#a1a1a6',
+                        font: { family: 'Inter' },
+                        callback: function (value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // ===== Modal Close on Outside Click =====
@@ -784,16 +995,13 @@ function renderCalendar() {
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
 
-    // Update header
     document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
 
-    // Get first and last day of month
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const startingDay = firstDay.getDay(); // 0 = Sunday
+    const startingDay = firstDay.getDay();
     const totalDays = lastDay.getDate();
 
-    // Get some days from previous month
     const prevMonthLastDay = new Date(year, month, 0).getDate();
 
     const calendarDays = document.getElementById('calendar-days');
@@ -802,22 +1010,19 @@ function renderCalendar() {
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    // Add days from previous month
     for (let i = startingDay - 1; i >= 0; i--) {
         const day = prevMonthLastDay - i;
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         calendarDays.appendChild(createDayElement(day, dateStr, true, false));
     }
 
-    // Add days of current month
     for (let day = 1; day <= totalDays; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const isToday = dateStr === todayStr;
         calendarDays.appendChild(createDayElement(day, dateStr, false, isToday));
     }
 
-    // Add days from next month to complete the grid
-    const remainingDays = 42 - (startingDay + totalDays); // 6 rows * 7 days = 42
+    const remainingDays = 42 - (startingDay + totalDays);
     for (let day = 1; day <= remainingDays; day++) {
         const dateStr = `${year}-${String(month + 2).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         calendarDays.appendChild(createDayElement(day, dateStr, true, false));
@@ -828,17 +1033,14 @@ function createDayElement(day, dateStr, isOtherMonth, isToday) {
     const dayEl = document.createElement('div');
     dayEl.className = `calendar-day${isOtherMonth ? ' other-month' : ''}${isToday ? ' today' : ''}`;
 
-    // Day number
     const dayNumber = document.createElement('span');
     dayNumber.className = 'day-number';
     dayNumber.textContent = day;
     dayEl.appendChild(dayNumber);
 
-    // Projects container
     const projectsContainer = document.createElement('div');
     projectsContainer.className = 'day-projects';
 
-    // Find projects for this day (only active projects, not terminado)
     const dayProjects = projects.filter(p => {
         if (p.status === 'terminado') return false;
         if (!p.fechaInicio && !p.fechaFin) return false;
@@ -847,7 +1049,6 @@ function createDayElement(day, dateStr, isOtherMonth, isToday) {
         return dateStr >= start && dateStr <= end;
     });
 
-    // Show max 3 projects, then "+ X more"
     const maxShow = 3;
     dayProjects.slice(0, maxShow).forEach(project => {
         const start = project.fechaInicio || project.fechaFin;
@@ -860,8 +1061,10 @@ function createDayElement(day, dateStr, isOtherMonth, isToday) {
             else positionClass = 'middle';
         }
 
+        const sColor = getServiceColor(project.tipo);
         const projectEl = document.createElement('div');
         projectEl.className = `calendar-project ${project.status} ${positionClass}`;
+        projectEl.style.borderLeftColor = sColor.border;
         projectEl.textContent = project.nombre;
         projectEl.onclick = () => openDetailModal(project.id);
         projectsContainer.appendChild(projectEl);
@@ -892,4 +1095,3 @@ function goToToday() {
     calendarDate = new Date();
     renderCalendar();
 }
-

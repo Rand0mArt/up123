@@ -26,3 +26,9 @@ create policy "Enable access to all users" on public.projects
 for all
 using (true)
 with check (true);
+
+-- ===== V2.0 Migration =====
+-- Run this on your existing Supabase database to add financial fields.
+-- This is SAFE: it only adds new columns with defaults, no data is deleted.
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS gastos numeric DEFAULT 0;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS utilidad numeric DEFAULT 0;

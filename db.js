@@ -45,6 +45,8 @@ const DB = {
             cliente: project.cliente,
             fecha_inicio: project.fechaInicio || null,
             fecha_fin: project.fechaFin || null,
+            gastos: parseFloat(project.gastos) || 0,
+            utilidad: parseFloat(project.utilidad) || 0,
             data: {
                 tasks: project.tasks || [],
                 conclusion: project.conclusion || null,
@@ -71,6 +73,8 @@ const DB = {
             cliente: row.cliente,
             fechaInicio: row.fecha_inicio,
             fechaFin: row.fecha_fin,
+            gastos: parseFloat(row.gastos) || 0,
+            utilidad: parseFloat(row.utilidad) || 0,
             ...row.data
         };
     },
