@@ -185,6 +185,147 @@ body {
     color: #011752;
 }
 
+/* ===== Auth Overlay & Profile ===== */
+.auth-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-primary);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: radial-gradient(circle at center, rgba(6, 86, 194, 0.15) 0%, transparent 60%);
+}
+
+.auth-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 60px 40px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.auth-modal h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.auth-modal p {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+
+.btn-auth-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    background: white;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-auth-google:hover {
+    background: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
+}
+
+.btn-auth-google:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.user-profile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid var(--border);
+}
+
+.user-profile:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-light);
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--border);
+}
+
+.profile-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    min-width: 180px;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: var(--transition);
+    z-index: 100;
+}
+
+.profile-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    color: var(--danger);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.profile-menu-item:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
 /* ===== Kanban Board ===== */
 .kanban-board {
     display: grid;
@@ -277,8 +418,20 @@ body {
     border-radius: var(--radius-md);
     padding: 14px;
     cursor: grab;
-    transition: var(--transition);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+}
+
+/* Overdue Alert Styles */
+.project-card.overdue-card {
+    border: 2px solid var(--danger) !important;
+    background: linear-gradient(to right, rgba(239, 68, 68, 0.05), var(--surface));
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.overdue-text {
+    color: var(--danger) !important;
+    font-weight: 700;
 }
 
 .project-card:active {

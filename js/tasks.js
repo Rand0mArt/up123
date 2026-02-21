@@ -168,11 +168,22 @@ function renderTasksView() {
             tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
 
             totalTasks += tasks.length;
+            // Ensure taskOrder exists for sorting
+            if (project.taskOrder === undefined) project.taskOrder = project.order || 0;
             return { project, tasks };
         })
-        .filter(g => g.tasks.length > 0);
+        .filter(g => g.tasks.length > 0)
+        .sort((a, b) => a.project.taskOrder - b.project.taskOrder);
 
     countEl.textContent = `${totalTasks} tarea${totalTasks !== 1 ? 's' : ''}`;
+
+    // Read collapsed state from localStorage
+    let collapsedProjects = [];
+    try {
+        collapsedProjects = JSON.parse(localStorage.getItem('kanban_collapsed_projects') || '[]');
+    } catch (e) {
+        collapsedProjects = [];
+    }
 
     if (projectsWithTasks.length === 0) {
         board.innerHTML = `
@@ -222,9 +233,19 @@ function renderTasksView() {
             `;
         }).join('');
 
+        const isCollapsed = collapsedProjects.includes(project.id);
+        const collapsedClass = isCollapsed ? 'collapsed' : '';
+
         return `
-            <div class="task-group" data-project-id="${project.id}">
+            <div class="task-group ${collapsedClass}" data-project-id="${project.id}" draggable="true">
                 <div class="task-group-header" onclick="toggleTaskGroup(this)">
+                    <span class="project-drag-handle" title="Arrastrar para reordenar proyecto" onclick="event.stopPropagation()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                            <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                            <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+                        </svg>
+                    </span>
                     <span class="task-group-toggle">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 9l6 6 6-6"/>
@@ -243,6 +264,7 @@ function renderTasksView() {
 
     // Attach drag events for task reordering
     initTaskDragReorder();
+    initProjectDragReorder();
 }
 
 function formatDueBadge(dueDate) {
@@ -261,7 +283,22 @@ function formatDueBadge(dueDate) {
 }
 
 function toggleTaskGroup(headerEl) {
-    headerEl.closest('.task-group').classList.toggle('collapsed');
+    const groupEl = headerEl.closest('.task-group');
+    const projectId = groupEl.dataset.projectId;
+    groupEl.classList.toggle('collapsed');
+
+    // Save state to localStorage
+    try {
+        let collapsedProjects = JSON.parse(localStorage.getItem('kanban_collapsed_projects') || '[]');
+        if (groupEl.classList.contains('collapsed')) {
+            if (!collapsedProjects.includes(projectId)) collapsedProjects.push(projectId);
+        } else {
+            collapsedProjects = collapsedProjects.filter(id => id !== projectId);
+        }
+        localStorage.setItem('kanban_collapsed_projects', JSON.stringify(collapsedProjects));
+    } catch (e) {
+        console.error("Error saving collapsed state", e);
+    }
 }
 
 function toggleTaskFromBoard(projectId, taskIndex) {
@@ -336,6 +373,9 @@ function initTaskDragReorder() {
         item.addEventListener('drop', (e) => {
             e.preventDefault();
             if (!draggedTaskEl || draggedTaskEl === item) return;
+            // Ensure we are dropping a task (not a project)
+            if (!draggedTaskEl.classList.contains('task-board-item')) return;
+            // Only allow reorder within same project
             if (draggedTaskEl.dataset.projectId !== item.dataset.projectId) return;
 
             const projectId = item.dataset.projectId;
@@ -360,6 +400,105 @@ function initTaskDragReorder() {
 
             // Update order field
             projects[projectIndex].tasks.forEach((t, i) => t.order = i);
+
+            saveProjects();
+            renderTasksView();
+        });
+    });
+}
+
+// ===== Project Group Drag-to-Reorder =====
+let draggedProjectGroupEl = null;
+
+function initProjectDragReorder() {
+    const projectGroups = document.querySelectorAll('.task-group[draggable="true"]');
+
+    projectGroups.forEach(group => {
+        // Find the drag handle (we only want to drag from the handle, not the whole group body casually)
+        const handle = group.querySelector('.project-drag-handle');
+        if (handle) {
+            handle.addEventListener('mousedown', () => group.setAttribute('draggable', 'true'));
+            handle.addEventListener('mouseup', () => group.setAttribute('draggable', 'false'));
+            handle.addEventListener('mouseleave', () => group.setAttribute('draggable', 'false'));
+        }
+
+        group.addEventListener('dragstart', (e) => {
+            // Prevent dragging if the target isn't the group itself (e.g. escaping task drag)
+            if (e.target !== group) return;
+            draggedProjectGroupEl = group;
+            group.classList.add('dragging-project');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
+            // Optional: collapse it while dragging to make it easier
+            if (!group.classList.contains('collapsed')) {
+                group.dataset.tempCollapsed = 'true';
+                group.classList.add('collapsed');
+            }
+        });
+
+        group.addEventListener('dragend', () => {
+            if (draggedProjectGroupEl) {
+                draggedProjectGroupEl.classList.remove('dragging-project');
+                if (draggedProjectGroupEl.dataset.tempCollapsed === 'true') {
+                    draggedProjectGroupEl.classList.remove('collapsed');
+                    delete draggedProjectGroupEl.dataset.tempCollapsed;
+                }
+            }
+            draggedProjectGroupEl = null;
+            document.querySelectorAll('.drag-over-project-above, .drag-over-project-below').forEach(el => {
+                el.classList.remove('drag-over-project-above', 'drag-over-project-below');
+            });
+        });
+
+        group.addEventListener('dragover', (e) => {
+            // Ensure we are only responding to project dragging, not task dragging
+            if (!draggedProjectGroupEl || draggedProjectGroupEl === group) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            const rect = group.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+
+            group.classList.remove('drag-over-project-above', 'drag-over-project-below');
+            if (e.clientY < midY) {
+                group.classList.add('drag-over-project-above');
+            } else {
+                group.classList.add('drag-over-project-below');
+            }
+        });
+
+        group.addEventListener('dragleave', () => {
+            group.classList.remove('drag-over-project-above', 'drag-over-project-below');
+        });
+
+        group.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (!draggedProjectGroupEl || draggedProjectGroupEl === group) return;
+
+            // Build a current ordered list of project IDs based on the DOM *before* drop
+            const allGroupsData = Array.from(document.querySelectorAll('.task-group')).map(g => g.dataset.projectId);
+
+            const draggedId = draggedProjectGroupEl.dataset.projectId;
+            const targetId = group.dataset.projectId;
+
+            const fromIdx = allGroupsData.indexOf(draggedId);
+            let toIdx = allGroupsData.indexOf(targetId);
+
+            const rect = group.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const insertAfter = e.clientY >= midY;
+
+            // splice logic on the IDs
+            allGroupsData.splice(fromIdx, 1);
+            if (fromIdx < toIdx) toIdx--;
+            if (insertAfter) toIdx++;
+            allGroupsData.splice(toIdx, 0, draggedId);
+
+            // Now update the taskOrder for all active projects
+            allGroupsData.forEach((id, displayIndex) => {
+                const p = projects.find(proj => proj.id === id);
+                if (p) p.taskOrder = displayIndex;
+            });
 
             saveProjects();
             renderTasksView();

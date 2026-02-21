@@ -57,7 +57,8 @@ const DB = {
                 medidas: project.medidas || '',
                 presupuesto: project.presupuesto || '',
                 contacto: project.contacto || '',
-                driveLink: project.driveLink || ''
+                driveLink: project.driveLink || '',
+                taskOrder: project.taskOrder !== undefined ? project.taskOrder : (project.order || 0)
             }
         };
     },
@@ -145,6 +146,35 @@ const DB = {
             console.error('Error saving all:', error);
             alert('Error guardando cambios: ' + error.message);
         }
+    },
+
+    // Real-time synchronization
+    async subscribeToChanges(callback) {
+        const supabase = await getSupabase();
+
+        console.log('📡 Suscribiendo a cambios en tiempo real...');
+
+        supabase
+            .channel('public:projectos')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'projectos'
+            }, payload => {
+                console.log('🔔 Cambio detectado en DB:', payload);
+                if (callback && typeof callback === 'function') {
+                    callback(payload);
+                }
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Conectado a Realtime de Supabase');
+                } else if (status === 'CLOSED') {
+                    console.log('🔌 Desconectado de Realtime');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('❌ Error en el canal Realtime');
+                }
+            });
     }
 };
 

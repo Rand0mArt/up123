@@ -40,6 +40,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         projects = await DB.fetchProjects();
         console.log(`✅ ${projects.length} proyectos cargados`);
+
+        // Listen for Realtime changes
+        DB.subscribeToChanges(handleRealtimeUpdate);
+
     } catch (e) {
         console.error('Error cargando proyectos:', e);
         alert('Error conectando a la base de datos: ' + e.message);
@@ -51,6 +55,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTodayAsDefault();
 });
 
+// ===== Realtime Handler =====
+async function handleRealtimeUpdate(payload) {
+    // We simply refetch all projects to ensure accurate state and ordering
+    // This is the simplest and most robust way to handle any kind of change
+    try {
+        projects = await DB.fetchProjects();
+        renderKanban();
+        updateCounts();
+
+        // Refresh other views if they are active
+        const currentView = document.querySelector('.view-btn.active').dataset.view;
+        if (currentView === 'history' && typeof renderHistory === 'function') renderHistory();
+        if (currentView === 'calendar' && typeof renderCalendar === 'function') renderCalendar();
+        if (currentView === 'tasks' && typeof renderTasksView === 'function') renderTasksView();
+
+    } catch (e) {
+        console.error('Error procesando actualización en tiempo real:', e);
+    }
+}
+
+// ===== Funciones Principales =====
 function setTodayAsDefault() {
     const today = new Date().toISOString().split('T')[0];
     const fechaInicio = document.getElementById('fecha-inicio');

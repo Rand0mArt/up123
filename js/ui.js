@@ -489,8 +489,13 @@ function renderKanban() {
                     utilidadHtml = `<span class="utilidad-badge ${uClass}">${uSign}$${u.toLocaleString()}</span>`;
                 }
 
+                // Identify Overdue
+                const isOverdue = deadlineStatus && deadlineStatus.level === 'urgent' && deadlineStatus.days < 0;
+                const overdueClass = isOverdue ? 'overdue-card' : '';
+                const titleAlert = isOverdue ? '⚠️ ' : '';
+
                 return `
-                    <article class="project-card" 
+                    <article class="project-card ${overdueClass}" 
                              draggable="true" 
                              data-id="${project.id}"
                              style="border-left: 4px solid ${sColor.border};"
@@ -500,7 +505,7 @@ function renderKanban() {
                         ${deadlineBadgeHtml}
                         <span class="project-type" style="background: ${sColor.bg}; color: ${sColor.label};">${project.tipo}</span>
                         ${isTerminado && project.conclusion ? '<span class="conclusion-badge">✓ Finalizado</span>' : ''}
-                        <h3 class="project-name">${project.nombre}</h3>
+                        <h3 class="project-name ${isOverdue ? 'overdue-text' : ''}">${titleAlert}${project.nombre}</h3>
                         <p class="project-artist">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -572,7 +577,12 @@ function renderHistory() {
             </div>
         `;
     } else {
-        historyList.innerHTML = terminadoProjects.map(project => {
+        const ITEMS_PER_PAGE = 20;
+        const itemsToShow = window.currentHistoryItems || ITEMS_PER_PAGE;
+
+        const displayedProjects = terminadoProjects.slice(0, itemsToShow);
+
+        let html = displayedProjects.map(project => {
             const sColor = getServiceColor(project.tipo);
             const utilidad = parseFloat(project.utilidad) || 0;
             const utilClass = utilidad >= 0 ? 'utilidad-positive' : 'utilidad-negative';
@@ -589,8 +599,26 @@ function renderHistory() {
                 <span class="history-rating">${getStars(project.conclusion?.calificacion) || '-'}</span>
             </div>
         `}).join('');
+
+        if (terminadoProjects.length > itemsToShow) {
+            html += `
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn-secondary" onclick="loadMoreHistory()" style="padding: 10px 20px;">Cargar más (${terminadoProjects.length - itemsToShow} restantes)</button>
+                </div>
+             `;
+        }
+
+        historyList.innerHTML = html;
     }
 }
+
+function loadMoreHistory() {
+    window.currentHistoryItems = (window.currentHistoryItems || 20) + 20;
+    renderHistory();
+}
+
+// Make loadMoreHistory global since it's called from inline HTML
+window.loadMoreHistory = loadMoreHistory;
 
 function formatDate(dateStr) {
     if (!dateStr) return '-';
