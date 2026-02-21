@@ -16,10 +16,10 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=5">
+    <link rel="stylesheet" href="styles.css?v=6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-    <script src="db.js?v=5"></script>
+    <script src="db.js?v=6"></script>
 </head>
 
 <body>
@@ -72,6 +72,13 @@
                                 stroke-width="2">
                                 <rect x="3" y="4" width="18" height="18" rx="2" />
                                 <path d="M16 2v4M8 2v4M3 10h18" />
+                            </svg>
+                        </button>
+                        <button class="view-btn" data-view="tasks" title="Tareas">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 11l3 3L22 4" />
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                             </svg>
                         </button>
                         <button class="view-btn" data-view="analytics" title="Analytics">
@@ -211,6 +218,34 @@
             </div>
             <div class="chart-container">
                 <canvas id="profit-chart"></canvas>
+            </div>
+        </main>
+
+        <!-- Tasks View -->
+        <main class="tasks-view" id="tasks-view" style="display: none;">
+            <div class="tasks-view-header">
+                <div class="tasks-view-title">
+                    <h2>📋 Todas las Tareas</h2>
+                    <span class="tasks-view-count" id="tasks-view-count">0 tareas</span>
+                </div>
+                <div class="tasks-view-filters">
+                    <select id="tasks-filter-project" onchange="renderTasksView()">
+                        <option value="all">Todos los proyectos</option>
+                    </select>
+                    <select id="tasks-filter-priority" onchange="renderTasksView()">
+                        <option value="all">Todas las prioridades</option>
+                        <option value="alta">🔴 Alta</option>
+                        <option value="media">🟡 Media</option>
+                        <option value="normal">⚪ Normal</option>
+                    </select>
+                    <label class="tasks-filter-toggle">
+                        <input type="checkbox" id="tasks-filter-pending" onchange="renderTasksView()">
+                        <span>Solo pendientes</span>
+                    </label>
+                </div>
+            </div>
+            <div class="tasks-board" id="tasks-board">
+                <!-- Task groups by project will be inserted here -->
             </div>
         </main>
     </div>
@@ -525,7 +560,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 
 </html>
