@@ -35,9 +35,9 @@ const GCal = {
                 window.dispatchEvent(new CustomEvent('gcal-authed'));
             }
         });
-        // Check if we already have a valid token in sessionStorage
-        const saved = sessionStorage.getItem('gcal_token');
-        const savedExpiry = sessionStorage.getItem('gcal_expiry');
+        // Check if we already have a valid token in localStorage
+        const saved = localStorage.getItem('gcal_token');
+        const savedExpiry = localStorage.getItem('gcal_expiry');
         if (saved && savedExpiry && Date.now() < parseInt(savedExpiry)) {
             this.accessToken = saved;
             this.tokenExpiry = parseInt(savedExpiry);
@@ -45,6 +45,45 @@ const GCal = {
         } else {
             this._updateUI(false);
         }
+    },
+
+    // ─── Silent Auth / Promise Wrapper ─────────────
+    _ensureAuthed() {
+        return new Promise((resolve) => {
+            if (this._hasValidToken()) {
+                resolve(true);
+                return;
+            }
+            if (!this.tokenClient) {
+                alert('Google Identity Services no está listo. Intenta en un momento.');
+                resolve(false);
+                return;
+            }
+
+            // Override the default callback temporarily to resolve our promise
+            const oldCallback = this.tokenClient.callback;
+
+            this.tokenClient.callback = (response) => {
+                if (response.error) {
+                    console.error('GCal auth error (silent):', response.error);
+                    GCal._updateUI(false);
+                    // Restore original
+                    this.tokenClient.callback = oldCallback;
+                    resolve(false);
+                    return;
+                }
+                GCal.accessToken = response.access_token;
+                GCal.tokenExpiry = Date.now() + (response.expires_in - 60) * 1000;
+                GCal._updateUI(true);
+
+                // Restore original
+                this.tokenClient.callback = oldCallback;
+                resolve(true);
+            };
+
+            // Request token silently (without prompt: 'consent')
+            this.tokenClient.requestAccessToken();
+        });
     },
 
     // Request or refresh token
@@ -57,7 +96,7 @@ const GCal = {
             this._updateUI(true);
             return;
         }
-        this.tokenClient.requestAccessToken({ prompt: 'consent' });
+        this.tokenClient.requestAccessToken();
     },
 
     signOut() {
@@ -68,8 +107,8 @@ const GCal = {
         }
         this.accessToken = null;
         this.tokenExpiry = null;
-        sessionStorage.removeItem('gcal_token');
-        sessionStorage.removeItem('gcal_expiry');
+        localStorage.removeItem('gcal_token');
+        localStorage.removeItem('gcal_expiry');
         this._updateUI(false);
     },
 
@@ -80,8 +119,8 @@ const GCal = {
     _updateUI(authed) {
         // Persist valid token
         if (authed && this.accessToken) {
-            sessionStorage.setItem('gcal_token', this.accessToken);
-            sessionStorage.setItem('gcal_expiry', this.tokenExpiry);
+            localStorage.setItem('gcal_token', this.accessToken);
+            localStorage.setItem('gcal_expiry', this.tokenExpiry);
         }
         const btn = document.getElementById('gcal-auth-btn');
         const status = document.getElementById('gcal-status');
@@ -172,11 +211,9 @@ const GCal = {
     },
 
     async syncProjectToCalendar(project) {
-        if (!this._hasValidToken()) {
-            alert('Primero conecta tu cuenta de Google.');
-            this.authorize();
-            return null;
-        }
+        const isAuthed = await this._ensureAuthed();
+        if (!isAuthed) return null;
+
         if (!project.fechaInicio && !project.fechaFin) {
             alert('El proyecto necesita fecha de inicio o fecha fin para sincronizar al calendario.');
             return null;
@@ -220,11 +257,9 @@ const GCal = {
     },
 
     async syncTaskToCalendar(task, project) {
-        if (!this._hasValidToken()) {
-            alert('Primero conecta tu cuenta de Google.');
-            this.authorize();
-            return null;
-        }
+        const isAuthed = await this._ensureAuthed();
+        if (!isAuthed) return null;
+
         if (!task.dueDate) {
             alert('La tarea necesita fecha para sincronizar al calendario.');
             return null;
@@ -273,11 +308,8 @@ const GCal = {
 
     // ─── Google Drive ─────────────────────────────────────
     async createProjectFolder(projectName) {
-        if (!this._hasValidToken()) {
-            alert('Primero conecta tu cuenta de Google.');
-            this.authorize();
-            return null;
-        }
+        const isAuthed = await this._ensureAuthed();
+        if (!isAuthed) return null;
 
         // 1. Find or create root "RANDOM Proyectos" folder
         const rootId = await this._ensureRootFolder();
