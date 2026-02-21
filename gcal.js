@@ -85,21 +85,92 @@ const GCal = {
         }
         const btn = document.getElementById('gcal-auth-btn');
         const status = document.getElementById('gcal-status');
+        const syncBtn = document.getElementById('gcal-sync-btn');
+
         if (!btn || !status) return;
         if (authed) {
             btn.textContent = '✅ Google conectado';
             btn.classList.add('connected');
             status.textContent = 'Sesión activa';
             status.style.color = 'var(--success)';
+            if (syncBtn) syncBtn.style.display = 'inline-block';
         } else {
             btn.textContent = '🔗 Conectar Google';
             btn.classList.remove('connected');
             status.textContent = 'Sin conectar';
             status.style.color = 'var(--text-muted)';
+            if (syncBtn) syncBtn.style.display = 'none';
         }
     },
 
     // ─── Google Calendar ──────────────────────────────────
+
+    async fetchUpdatesFromCalendar(currentProjects) {
+        if (!this._hasValidToken()) return 0;
+
+        let updateCount = 0;
+        const activeProjects = currentProjects.filter(p => !['terminado', 'cancelado'].includes(p.status));
+        if (activeProjects.length === 0) return 0;
+
+        // Fetch events from last month to future that have [KANBAN]
+        const timeMin = new Date();
+        timeMin.setMonth(timeMin.getMonth() - 1);
+
+        try {
+            const query = encodeURIComponent('[KANBAN]');
+            const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?q=${query}&timeMin=${timeMin.toISOString()}&maxResults=2500`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const events = data.items || [];
+
+            for (const project of activeProjects) {
+                // Find event matching exactly "[KANBAN] Project Name"
+                const eventInfo = events.find(e => e.summary === `[KANBAN] ${project.nombre}`);
+
+                if (eventInfo && (eventInfo.start || eventInfo.end)) {
+                    let eventStart = null;
+                    if (eventInfo.start) {
+                        eventStart = eventInfo.start.date || (eventInfo.start.dateTime ? eventInfo.start.dateTime.split('T')[0] : null);
+                    }
+
+                    let eventEnd = null;
+                    if (eventInfo.end) {
+                        const rawEnd = eventInfo.end.date || (eventInfo.end.dateTime ? eventInfo.end.dateTime.split('T')[0] : null);
+                        eventEnd = rawEnd;
+                        // GCal all-day events have exclusive end dates
+                        if (eventInfo.end.date && eventStart && rawEnd && eventStart !== rawEnd) {
+                            const d = new Date(rawEnd);
+                            d.setDate(d.getDate() - 1);
+                            eventEnd = d.toISOString().split('T')[0];
+                        }
+                    }
+
+                    let changed = false;
+                    if (eventStart && eventStart !== project.fechaInicio) {
+                        project.fechaInicio = eventStart;
+                        changed = true;
+                    }
+                    if (eventEnd && eventEnd !== project.fechaFin) {
+                        project.fechaFin = eventEnd;
+                        changed = true;
+                    }
+
+                    if (changed) {
+                        updateCount++;
+                    }
+                }
+            }
+            return updateCount;
+        } catch (err) {
+            console.error('Error fetching from GCal:', err);
+            return 0;
+        }
+    },
+
     async syncProjectToCalendar(project) {
         if (!this._hasValidToken()) {
             alert('Primero conecta tu cuenta de Google.');

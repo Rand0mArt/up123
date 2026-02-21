@@ -1461,3 +1461,35 @@ function goToToday() {
     calendarDate = new Date();
     renderCalendar();
 }
+
+// ===== Google Calendar Bidirectional Sync =====
+async function syncFromGCal() {
+    if (!window.GCal) return;
+    const btn = document.getElementById('gcal-sync-btn');
+    if (!btn) return;
+
+    // UI feedback
+    const originalText = btn.textContent;
+    btn.textContent = '🔄 Buscando...';
+    btn.disabled = true;
+
+    try {
+        const updatedCount = await window.GCal.fetchUpdatesFromCalendar(projects);
+
+        if (updatedCount > 0) {
+            saveProjects();
+            renderKanban();
+            if (currentView === 'calendar') renderCalendar();
+            if (currentView === 'tasks') renderTasksView();
+            alert(`✅ Sincronización exitosa. Se actualizaron las fechas de ${updatedCount} proyecto(s) desde Google Calendar.`);
+        } else {
+            alert('Las fechas en el Kanban ya están sincronizadas con tu Google Calendar.');
+        }
+    } catch (err) {
+        console.error('Error during GCal sync:', err);
+        alert('Hubo un problema al sincronizar con Google Calendar.');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}

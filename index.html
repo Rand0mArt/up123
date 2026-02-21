@@ -180,7 +180,12 @@
                 <div style="display: flex; gap: 15px; align-items: center;">
                     <div class="gcal-controls" style="display: flex; align-items: center; gap: 8px;">
                         <span id="gcal-status" style="font-size: 13px; color: var(--text-muted);">Sin conectar</span>
-                        <button id="gcal-auth-btn" class="btn-secondary" onclick="GCal.authorize()" style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer;">🔗 Conectar Google</button>
+                        <button id="gcal-auth-btn" class="btn-secondary" onclick="GCal.authorize()"
+                            style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer;">🔗
+                            Conectar Google</button>
+                        <button id="gcal-sync-btn" class="btn-secondary" onclick="syncFromGCal()"
+                            style="display: none; padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--text);"
+                            title="Buscar cambios en Google Calendar">🔄 Sincronizar</button>
                     </div>
                     <button class="btn-today" onclick="goToToday()">Hoy</button>
                 </div>
