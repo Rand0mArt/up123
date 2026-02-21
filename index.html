@@ -19,7 +19,9 @@
     <link rel="stylesheet" href="styles.css?v=6">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-    <script src="db.js?v=6"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="gcal.js?v=7"></script>
+    <script src="db.js?v=7"></script>
 </head>
 
 <body>
@@ -175,7 +177,13 @@
                         </svg>
                     </button>
                 </div>
-                <button class="btn-today" onclick="goToToday()">Hoy</button>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div class="gcal-controls" style="display: flex; align-items: center; gap: 8px;">
+                        <span id="gcal-status" style="font-size: 13px; color: var(--text-muted);">Sin conectar</span>
+                        <button id="gcal-auth-btn" class="btn-secondary" onclick="GCal.authorize()" style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer;">🔗 Conectar Google</button>
+                    </div>
+                    <button class="btn-today" onclick="goToToday()">Hoy</button>
+                </div>
             </div>
             <div class="calendar-grid">
                 <div class="calendar-weekdays">

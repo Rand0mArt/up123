@@ -475,6 +475,10 @@ function saveProjectEdits(event) {
 
     saveProjects();
 
+    if (window.GCal) {
+        window.GCal.syncProjectToCalendar(projects[projectIndex]);
+    }
+
     document.getElementById('detail-title').textContent = projects[projectIndex].nombre;
     renderDetailContent(projects[projectIndex]);
     renderTasks(projects[projectIndex]);
@@ -575,6 +579,10 @@ function updateTaskDate(index, date) {
 
     projects[projectIndex].tasks[index].dueDate = date || null;
     saveProjects();
+
+    if (window.GCal && date) {
+        window.GCal.syncTaskToCalendar(projects[projectIndex].tasks[index], projects[projectIndex]);
+    }
 }
 
 function cycleTaskPriority(projectId, taskIndex) {
@@ -919,6 +927,10 @@ function handleSubmit(event) {
     closeModal();
     renderKanban();
     updateCounts();
+
+    if (window.GCal) {
+        window.GCal.syncProjectToCalendar(project);
+    }
 }
 
 function handleConclusionSubmit(event) {
