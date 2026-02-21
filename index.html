@@ -112,166 +112,167 @@
                 </svg>
                 Nuevo Proyecto
             </button>
-    </div>
-    </header>
+        </header>
 
-    <!-- Kanban Board View -->
-    <main class="kanban-board" id="kanban-board">
-        <div class="kanban-column" data-status="nuevo">
-            <div class="column-header">
-                <span class="column-dot nuevo"></span>
-                <h2>Nuevo</h2>
-                <span class="column-count" id="count-nuevo">0</span>
-            </div>
-            <div class="column-cards" id="cards-nuevo"></div>
-        </div>
-        <div class="kanban-column" data-status="en-curso">
-            <div class="column-header">
-                <span class="column-dot en-curso"></span>
-                <h2>En Curso</h2>
-                <span class="column-count" id="count-en-curso">0</span>
-            </div>
-            <div class="column-cards" id="cards-en-curso"></div>
-        </div>
-        <div class="kanban-column" data-status="completo">
-            <div class="column-header">
-                <span class="column-dot completo"></span>
-                <h2>Completo</h2>
-                <span class="column-count" id="count-completo">0</span>
-            </div>
-            <div class="column-cards" id="cards-completo"></div>
-        </div>
-        <div class="kanban-column" data-status="terminado">
-            <div class="column-header">
-                <span class="column-dot terminado"></span>
-                <h2>Terminado</h2>
-                <span class="column-count" id="count-terminado">0</span>
-            </div>
-            <div class="column-cards" id="cards-terminado"></div>
-        </div>
-    </main>
-
-    <!-- History View -->
-    <main class="history-view" id="history-view" style="display: none;">
-        <div class="history-header">
-            <h2>Historial de Proyectos Terminados</h2>
-            <span class="history-count" id="history-count">0 proyectos</span>
-        </div>
-        <div class="history-filters">
-            <label for="history-sort">Ordenar por:</label>
-            <select id="history-sort" onchange="renderHistory()">
-                <option value="fecha">Fecha (más reciente)</option>
-                <option value="calificacion">Calificación (mejor)</option>
-                <option value="presupuesto">Presupuesto (mayor)</option>
-                <option value="utilidad">Utilidad (mayor)</option>
-                <option value="tipo">Tipo de servicio</option>
-            </select>
-        </div>
-        <div class="history-list" id="history-list">
-            <!-- History items will be inserted here -->
-        </div>
-    </main>
-
-    <!-- Calendar View -->
-    <main class="calendar-view" id="calendar-view" style="display: none;">
-        <div class="calendar-header">
-            <div class="calendar-nav">
-                <button class="calendar-nav-btn" onclick="prevMonth()" title="Mes anterior">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 18l-6-6 6-6" />
-                    </svg>
-                </button>
-                <h2 id="calendar-month-year">Febrero 2026</h2>
-                <button class="calendar-nav-btn" onclick="nextMonth()" title="Mes siguiente">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 18l6-6-6-6" />
-                    </svg>
-                </button>
-            </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div class="gcal-controls" style="display: flex; align-items: center; gap: 8px;">
-                    <span id="gcal-status" style="font-size: 13px; color: var(--text-muted);">Sin conectar</span>
-                    <button id="gcal-auth-btn" class="btn-secondary" onclick="GCal.authorize()"
-                        style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer;">🔗
-                        Conectar Google</button>
-                    <button id="gcal-sync-btn" class="btn-secondary" onclick="syncFromGCal()"
-                        style="display: none; padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--text);"
-                        title="Buscar cambios en Google Calendar">🔄 Sincronizar</button>
+        <!-- Kanban Board View -->
+        <main class="kanban-board" id="kanban-board">
+            <div class="kanban-column" data-status="nuevo">
+                <div class="column-header">
+                    <span class="column-dot nuevo"></span>
+                    <h2>Nuevo</h2>
+                    <span class="column-count" id="count-nuevo">0</span>
                 </div>
-                <button class="btn-today" onclick="goToToday()">Hoy</button>
+                <div class="column-cards" id="cards-nuevo"></div>
             </div>
-        </div>
-        <div class="calendar-grid">
-            <div class="calendar-weekdays">
-                <span>Dom</span>
-                <span>Lun</span>
-                <span>Mar</span>
-                <span>Mié</span>
-                <span>Jue</span>
-                <span>Vie</span>
-                <span>Sáb</span>
+            <div class="kanban-column" data-status="en-curso">
+                <div class="column-header">
+                    <span class="column-dot en-curso"></span>
+                    <h2>En Curso</h2>
+                    <span class="column-count" id="count-en-curso">0</span>
+                </div>
+                <div class="column-cards" id="cards-en-curso"></div>
             </div>
-            <div class="calendar-days" id="calendar-days">
-                <!-- Calendar days will be inserted here -->
+            <div class="kanban-column" data-status="completo">
+                <div class="column-header">
+                    <span class="column-dot completo"></span>
+                    <h2>Completo</h2>
+                    <span class="column-count" id="count-completo">0</span>
+                </div>
+                <div class="column-cards" id="cards-completo"></div>
             </div>
-        </div>
-    </main>
+            <div class="kanban-column" data-status="terminado">
+                <div class="column-header">
+                    <span class="column-dot terminado"></span>
+                    <h2>Terminado</h2>
+                    <span class="column-count" id="count-terminado">0</span>
+                </div>
+                <div class="column-cards" id="cards-terminado"></div>
+            </div>
+        </main>
 
-    <!-- Analytics View -->
-    <main class="analytics-view" id="analytics-view" style="display: none;">
-        <div class="analytics-header">
-            <h2>📊 Análisis Financiero</h2>
-        </div>
-        <div class="analytics-cards">
-            <div class="analytics-stat-card">
-                <span class="stat-label">Utilidad Este Mes</span>
-                <span class="stat-value" id="stat-current-month">$0</span>
+        <!-- History View -->
+        <main class="history-view" id="history-view" style="display: none;">
+            <div class="history-header">
+                <h2>Historial de Proyectos Terminados</h2>
+                <span class="history-count" id="history-count">0 proyectos</span>
             </div>
-            <div class="analytics-stat-card">
-                <span class="stat-label">Utilidad Mes Anterior</span>
-                <span class="stat-value" id="stat-prev-month">$0</span>
+            <div class="history-filters">
+                <label for="history-sort">Ordenar por:</label>
+                <select id="history-sort" onchange="renderHistory()">
+                    <option value="fecha">Fecha (más reciente)</option>
+                    <option value="calificacion">Calificación (mejor)</option>
+                    <option value="presupuesto">Presupuesto (mayor)</option>
+                    <option value="utilidad">Utilidad (mayor)</option>
+                    <option value="tipo">Tipo de servicio</option>
+                </select>
             </div>
-            <div class="analytics-stat-card">
-                <span class="stat-label">Proyectos Terminados</span>
-                <span class="stat-value" id="stat-total-completed">0</span>
+            <div class="history-list" id="history-list">
+                <!-- History items will be inserted here -->
             </div>
-            <div class="analytics-stat-card">
-                <span class="stat-label">Utilidad Promedio</span>
-                <span class="stat-value" id="stat-avg-profit">$0</span>
-            </div>
-        </div>
-        <div class="chart-container">
-            <canvas id="profit-chart"></canvas>
-        </div>
-    </main>
+        </main>
 
-    <!-- Tasks View -->
-    <main class="tasks-view" id="tasks-view" style="display: none;">
-        <div class="tasks-view-header">
-            <div class="tasks-view-title">
-                <h2>📋 Todas las Tareas</h2>
-                <span class="tasks-view-count" id="tasks-view-count">0 tareas</span>
+        <!-- Calendar View -->
+        <main class="calendar-view" id="calendar-view" style="display: none;">
+            <div class="calendar-header">
+                <div class="calendar-nav">
+                    <button class="calendar-nav-btn" onclick="prevMonth()" title="Mes anterior">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                    </button>
+                    <h2 id="calendar-month-year">Febrero 2026</h2>
+                    <button class="calendar-nav-btn" onclick="nextMonth()" title="Mes siguiente">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </button>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div class="gcal-controls" style="display: flex; align-items: center; gap: 8px;">
+                        <span id="gcal-status" style="font-size: 13px; color: var(--text-muted);">Sin conectar</span>
+                        <button id="gcal-auth-btn" class="btn-secondary" onclick="GCal.authorize()"
+                            style="padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer;">🔗
+                            Conectar Google</button>
+                        <button id="gcal-sync-btn" class="btn-secondary" onclick="syncFromGCal()"
+                            style="display: none; padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; color: var(--text);"
+                            title="Buscar cambios en Google Calendar">🔄 Sincronizar</button>
+                    </div>
+                    <button class="btn-today" onclick="goToToday()">Hoy</button>
+                </div>
             </div>
-            <div class="tasks-view-filters">
-                <select id="tasks-filter-project" onchange="renderTasksView()">
-                    <option value="all">Todos los proyectos</option>
-                </select>
-                <select id="tasks-filter-priority" onchange="renderTasksView()">
-                    <option value="all">Todas las prioridades</option>
-                    <option value="alta">🔴 Alta</option>
-                    <option value="media">🟡 Media</option>
-                    <option value="normal">⚪ Normal</option>
-                </select>
-                <label class="tasks-filter-toggle">
-                    <input type="checkbox" id="tasks-filter-pending" onchange="renderTasksView()">
-                    <span>Solo pendientes</span>
-                </label>
+            <div class="calendar-grid">
+                <div class="calendar-weekdays">
+                    <span>Dom</span>
+                    <span>Lun</span>
+                    <span>Mar</span>
+                    <span>Mié</span>
+                    <span>Jue</span>
+                    <span>Vie</span>
+                    <span>Sáb</span>
+                </div>
+                <div class="calendar-days" id="calendar-days">
+                    <!-- Calendar days will be inserted here -->
+                </div>
             </div>
-        </div>
-        <div class="tasks-board" id="tasks-board">
-            <!-- Task groups by project will be inserted here -->
-        </div>
-    </main>
+        </main>
+
+        <!-- Analytics View -->
+        <main class="analytics-view" id="analytics-view" style="display: none;">
+            <div class="analytics-header">
+                <h2>📊 Análisis Financiero</h2>
+            </div>
+            <div class="analytics-cards">
+                <div class="analytics-stat-card">
+                    <span class="stat-label">Utilidad Este Mes</span>
+                    <span class="stat-value" id="stat-current-month">$0</span>
+                </div>
+                <div class="analytics-stat-card">
+                    <span class="stat-label">Utilidad Mes Anterior</span>
+                    <span class="stat-value" id="stat-prev-month">$0</span>
+                </div>
+                <div class="analytics-stat-card">
+                    <span class="stat-label">Proyectos Terminados</span>
+                    <span class="stat-value" id="stat-total-completed">0</span>
+                </div>
+                <div class="analytics-stat-card">
+                    <span class="stat-label">Utilidad Promedio</span>
+                    <span class="stat-value" id="stat-avg-profit">$0</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="profit-chart"></canvas>
+            </div>
+        </main>
+
+        <!-- Tasks View -->
+        <main class="tasks-view" id="tasks-view" style="display: none;">
+            <div class="tasks-view-header">
+                <div class="tasks-view-title">
+                    <h2>📋 Todas las Tareas</h2>
+                    <span class="tasks-view-count" id="tasks-view-count">0 tareas</span>
+                </div>
+                <div class="tasks-view-filters">
+                    <select id="tasks-filter-project" onchange="renderTasksView()">
+                        <option value="all">Todos los proyectos</option>
+                    </select>
+                    <select id="tasks-filter-priority" onchange="renderTasksView()">
+                        <option value="all">Todas las prioridades</option>
+                        <option value="alta">🔴 Alta</option>
+                        <option value="media">🟡 Media</option>
+                        <option value="normal">⚪ Normal</option>
+                    </select>
+                    <label class="tasks-filter-toggle">
+                        <input type="checkbox" id="tasks-filter-pending" onchange="renderTasksView()">
+                        <span>Solo pendientes</span>
+                    </label>
+                </div>
+            </div>
+            <div class="tasks-board" id="tasks-board">
+                <!-- Task groups by project will be inserted here -->
+            </div>
+        </main>
     </div>
 
     <!-- Modal: New Project -->
@@ -583,6 +584,7 @@
             </form>
         </div>
     </div>
+    </div> <!-- Closes app-container -->
 
     <script src="js/app.js?v=1"></script>
     <script src="js/ui.js?v=1"></script>
